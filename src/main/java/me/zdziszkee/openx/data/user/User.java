@@ -36,6 +36,46 @@ public class User {
     
     }
     
+    public Address getAddress() {
+        
+        return address;
+    }
+    
+    public int getId() {
+        
+        return id;
+    }
+    
+    public String getEmail() {
+        
+        return email;
+    }
+    
+    public String getUserName() {
+        
+        return userName;
+    }
+    
+    public String getPassword() {
+        
+        return password;
+    }
+    
+    public Name getName() {
+        
+        return name;
+    }
+    
+    public String getPhone() {
+        
+        return phone;
+    }
+    
+    public int get__v() {
+        
+        return __v;
+    }
+    
     @Override
     public String toString() {
         

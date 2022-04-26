@@ -10,8 +10,9 @@ public class OpenX {
     public static void main(String[] args) {
     
         WebClient webClient = WebClient.create("https://fakestoreapi.com/");
-    
+        
         final Flux<User> userFlux = webClient.get().uri("/users").retrieve().bodyToFlux(User.class);
         final List<User> list = userFlux.collectList().block();
+        
     }
 }

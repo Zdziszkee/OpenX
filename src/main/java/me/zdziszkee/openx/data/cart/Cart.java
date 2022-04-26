@@ -35,4 +35,29 @@ public class Cart {
         
         return "Cart{" + "id=" + id + ", userId=" + userId + ", date=" + date + ", products=" + products + ", __v=" + __v + '}';
     }
+    
+    public int getId() {
+        
+        return id;
+    }
+    
+    public int getUserId() {
+        
+        return userId;
+    }
+    
+    public LocalDateTime getDate() {
+        
+        return date;
+    }
+    
+    public List<ProductInfo> getProducts() {
+        
+        return products;
+    }
+    
+    public int get__v() {
+        
+        return __v;
+    }
 }

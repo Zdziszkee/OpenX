@@ -18,6 +18,16 @@ public class ProductInfo {
     
     }
     
+    public int getProductId() {
+        
+        return productId;
+    }
+    
+    public int getQuantity() {
+        
+        return quantity;
+    }
+    
     @Override
     public String toString() {
         
