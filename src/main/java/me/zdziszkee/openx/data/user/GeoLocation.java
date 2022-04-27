@@ -17,6 +17,16 @@ public class GeoLocation {
     
     }
     
+    public float getLat() {
+        
+        return lat;
+    }
+    
+    public float getaLong() {
+        
+        return aLong;
+    }
+    
     @Override
     public String toString() {
         

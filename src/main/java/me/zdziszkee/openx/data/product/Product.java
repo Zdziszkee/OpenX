@@ -8,6 +8,8 @@ public class Product {
     @JsonProperty
     private String title;
     @JsonProperty
+    private double price;
+    @JsonProperty
     private String description;
     @JsonProperty
     private String category;
@@ -16,10 +18,11 @@ public class Product {
     @JsonProperty
     private Rating rating;
     
-    public Product(int id, String title, String description, String category, String image, Rating rating) {
+    public Product(int id, String title, double price, String description, String category, String image, Rating rating) {
         
         this.id = id;
         this.title = title;
+        this.price = price;
         this.description = description;
         this.category = category;
         this.image = image;
@@ -43,6 +46,11 @@ public class Product {
     public String getDescription() {
         
         return description;
+    }
+    
+    public double getPrice() {
+        
+        return price;
     }
     
     public String getCategory() {

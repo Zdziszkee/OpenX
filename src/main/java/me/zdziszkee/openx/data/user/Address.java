@@ -27,6 +27,31 @@ public class Address {
     
     }
     
+    public GeoLocation getGeoLocation() {
+        
+        return geoLocation;
+    }
+    
+    public String getCity() {
+        
+        return city;
+    }
+    
+    public String getStreet() {
+        
+        return street;
+    }
+    
+    public int getNumber() {
+        
+        return number;
+    }
+    
+    public String getZipcode() {
+        
+        return zipcode;
+    }
+    
     @Override
     public String toString() {
         
