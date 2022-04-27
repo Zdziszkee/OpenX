@@ -5,10 +5,11 @@ import me.zdziszkee.openx.data.product.Product;
 import me.zdziszkee.openx.data.user.GeoLocation;
 import me.zdziszkee.openx.data.user.User;
 import me.zdziszkee.openx.util.CoordinatesUtil;
+import me.zdziszkee.openx.util.Pair;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class OpenX {
     private static WebClient webClient = null;
@@ -22,56 +23,51 @@ public class OpenX {
         }
     }
     
-    public static void main(String[] args) {
-    
-    
+    public Map<Integer, User> getUsers() {
+        
+        final Map<Integer, User> users = webClient.get().uri("/users").retrieve().bodyToFlux(User.class).collectMap(User::getId).block();
+        if (users == null) {
+            return new HashMap<>();
+        }
+        return users;
     }
     
-    
-    public static void printCategoryValue(String category) {
+    public Map<Integer, Product> getProducts() {
         
-        Map<String, Set<Product>> categoryProductMap = new HashMap<>();
-        final List<Product> products = webClient.get().uri("/products").retrieve().bodyToFlux(Product.class).collectList().block();
-        
-        products.forEach(product -> {
-            final String productCategory = product.getCategory();
-            categoryProductMap.putIfAbsent(productCategory, new HashSet<>());
-            categoryProductMap.get(productCategory).add(product);
-        });
-        
-        final double totalValue = categoryProductMap.get(category).stream().mapToDouble(Product::getPrice).sum();
-        System.out.println("Total " + category + "value: " + totalValue);
-        
+        final Map<Integer, Product> products = webClient.get().uri("/products").retrieve().bodyToFlux(Product.class).collectMap(Product::getId).block();
+        if (products == null) {
+            return new HashMap<>();
+        }
+        return products;
     }
     
-    public static void printTotalValue(String category) {
-        
-        final Flux<Product> productFlux = webClient.get().uri("/products").retrieve().bodyToFlux(Product.class);
-        final Double totalValue = productFlux.filter(product -> product.getCategory().equals(category)).map(Product::getPrice).reduce(0.0, Double::sum).block();
-        System.out.println(totalValue);
-    }
-    
-    public static void highestValueCart() {
+    public Map<Integer, Cart> getCarts() {
         
         final Map<Integer, Cart> carts = webClient.get().uri("/carts").retrieve().bodyToFlux(Cart.class).collectMap(Cart::getId).block();
-        final Map<Integer, User> users = webClient.get().uri("/users").retrieve().bodyToFlux(User.class).collectMap(User::getId).block();
-        final Map<Integer, Product> products = webClient.get().uri("/products").retrieve().bodyToFlux(Product.class).collectMap(Product::getId).block();
+        if (carts == null) {
+            return new HashMap<>();
+        }
+        return carts;
+    }
+    
+    public Set<String> getProductCategories() {
         
-        final Optional<Cart> optionalCart = carts.values().stream().max((first, second) -> {
+        return getProducts().values().stream().map(Product::getCategory).collect(Collectors.toSet());
+    }
+    
+    public double getTotalCategoryValue(String category) {
+        
+        return getProducts().values().stream().filter(product -> product.getCategory().equals(category)).map(Product::getPrice).reduce(0.0, Double::sum);
+    }
+    
+    public Cart getHighestValueCart() {
+        
+        
+        final Optional<Cart> optionalCart = getCarts().values().stream().max((first, second) -> {
             
-            final double sumFirst = first.getProducts().stream().mapToDouble(productInfo -> {
-                if (products != null) {
-                    return productInfo.getQuantity() * products.get(productInfo.getProductId()).getPrice();
-                }
-                return 0;
-            }).sum();
+            final double sumFirst = getCartValue(first);
             
-            final double sumSecond = second.getProducts().stream().mapToDouble(productInfo -> {
-                if (products != null) {
-                    return productInfo.getQuantity() * products.get(productInfo.getProductId()).getPrice();
-                }
-                return 0;
-            }).sum();
+            final double sumSecond = getCartValue(second);
             
             
             if (sumFirst > sumSecond) {
@@ -82,49 +78,69 @@ public class OpenX {
             return 0;
         });
         if (optionalCart.isEmpty()) {
-            return;
+            return null;
         }
         
-        final Cart mostExpensiveCart = optionalCart.get();
-        System.out.println("Most expensive cart" + mostExpensiveCart);
-        final User user = users.get(mostExpensiveCart.getUserId());
-        System.out.println("User name: " + user.getName());
+        return optionalCart.get();
+    }
+    
+    public double getCartValue(Cart cart) {
+        
+        if (cart == null) {
+            return 0;
+        }
+        final Map<Integer, Product> products = getProducts();
+        return cart.getProducts().stream().mapToDouble(productInfo -> productInfo.getQuantity() * products.get(productInfo.getProductId()).getPrice()).sum();
+    }
+    
+    public String getCartOwnerName(Cart cart) {
+        
+        if (cart == null) {
+            return null;
+        }
+        
+        final int userId = cart.getUserId();
+        final Map<Integer, User> users = getUsers();
+        final User user = users.get(userId);
+        
+        if (user == null) {
+            return null;
+        }
+        return user.getName().toString();
     }
     
     /*
        User pairs can be picked in n!/2!(n-2)!
      */
-    public static void printUsersLivingFurthest() {
-        
-        final List<User> users = webClient.get().uri("/users").retrieve().bodyToFlux(User.class).collectList().block();
-        
-        if (users == null) {
-            return;
-        }
-        final Map<User, User> userCombinations = new HashMap<>();
+    public  Pair<User, User> getUsersLivingFurthest() {
+    
+        final List<User> users = new ArrayList<>(getUsers().values());
+    
+        final Set<Pair<User, User>> userCombinations = new HashSet<>();
         
         
         for (int i = 0 ; i < users.size() ; i++) {
-            for (int j = users.size() - 1 ; j > 0 ; j--) {
-                final User first = users.get(i);
+            final User first = users.get(i);
+            for (int j = i + 1 ; j < users.size() ; j++) {
                 final User second = users.get(j);
-                if (first == second) {
-                    continue;
+                if (first != second) {
+                    userCombinations.add(new Pair<>(first, second));
                 }
-                userCombinations.put(first, second);
             }
         }
-        final Optional<Map.Entry<User, User>> biggestDistanceUsersOptional = userCombinations.entrySet().stream().max((first, second) -> {
-            final GeoLocation firstUserLocation = first.getKey().getAddress().getGeoLocation();
-            final GeoLocation secondUserLocation = first.getValue().getAddress().getGeoLocation();
+
         
+        final Optional<Pair<User, User>> biggestDistanceUsersOptional = userCombinations.stream().max((firstUserPair, secondUserPair) -> {
+            final GeoLocation firstUserLocation = firstUserPair.getFirst().getAddress().getGeoLocation();
+            final GeoLocation secondUserLocation = firstUserPair.getSecond().getAddress().getGeoLocation();
+            
             final double firstPairDistance = CoordinatesUtil.distance(firstUserLocation.getLat(), secondUserLocation.getLat(), firstUserLocation.getaLong(), secondUserLocation.getaLong());
-        
-            final GeoLocation thirdUserLocation = second.getKey().getAddress().getGeoLocation();
-            final GeoLocation fourthUserLocation = second.getValue().getAddress().getGeoLocation();
-        
+            
+            final GeoLocation thirdUserLocation = secondUserPair.getFirst().getAddress().getGeoLocation();
+            final GeoLocation fourthUserLocation = secondUserPair.getSecond().getAddress().getGeoLocation();
+            
             final double secondPairDistance = CoordinatesUtil.distance(thirdUserLocation.getLat(), fourthUserLocation.getLat(), thirdUserLocation.getaLong(), fourthUserLocation.getaLong());
-        
+            
             if (firstPairDistance == secondPairDistance) {
                 return 0;
             } else if (firstPairDistance < secondPairDistance) {
@@ -132,11 +148,10 @@ public class OpenX {
             }
             return 1;
         });
-        if (biggestDistanceUsersOptional.isEmpty())return;
-        final Map.Entry<User, User> biggestDistanceUsers = biggestDistanceUsersOptional.get();
-        System.out.println("Furthest living users: ");
-        System.out.println("User 1: " + biggestDistanceUsers.getKey().toString());
-        System.out.println("User 2: " + biggestDistanceUsers.getValue().toString());
-    
+        if (biggestDistanceUsersOptional.isEmpty()) {
+            return null;
+        }
+        return biggestDistanceUsersOptional.get();
+        
     }
 }
